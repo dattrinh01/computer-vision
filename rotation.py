@@ -1,45 +1,38 @@
+import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-img = plt.imread("lenna.png")
 
+def rotation_image(src_img, angle, shape_out_img):
 
-def rotation_matrix(angle):
-    return np.array([
+    width, height = src_img.shape[0], src_img.shape[1]
+    R_mat = np.array([
         [np.cos(angle), -np.sin(angle), 0],
         [np.sin(angle), np.cos(angle), 0],
         [0, 0, 1]
     ])
 
-def get_grid(height, width):
-    coords = np.indices((height, width)).reshape(2, -1)
-    return np.vstack((coords, np.ones(coords.shape[1])))
+    result_img = np.zeros(shape_out_img, dtype='u1')
 
-def rotation_processing(img):
-    height, width = img.shape[0], img.shape[1]
-    coords = get_grid(height, width)
-    x_ori, y_ori = coords[0], coords[1]
-    R_mat = rotation_matrix(np.radians(45))
-    
-    R_mat_result = R_mat @ coords
+    for i in range(width):
+        for j in range(height):
 
-    x_rotation, y_rotation = R_mat_result[0, :], R_mat_result[1, :]
+            _x = np.array([i, j, 1])
+            new_xy = np.dot(R_mat, _x)
 
-    indices = np.where((x_rotation >= 0) & (x_rotation < height) & (y_rotation >= 0) & (y_rotation < width))
+            if 0 <= new_xy[0] <= width and 0 <= new_xy[1] <= height:
+                result_img[int(new_xy[0]), int(new_xy[1])
+                           ] = src_img[i, j]
 
-    x_ori_map, y_ori_map = x_ori[indices].astype(np.int32), y_ori[indices].astype(np.int32)
-    x_rotation_map, y_rotation_map = x_rotation[indices].astype(np.int32), y_rotation[indices].astype(np.int32)
+    return result_img
 
-    canvas = np.zeros_like(img)
-    canvas[x_ori_map, y_ori_map] = img[x_rotation_map, y_rotation_map]
 
-    plt.subplot(1, 2, 1)
-    plt.imshow(img)
-    plt.title("Image original")
-    plt.subplot(1, 2, 2)
-    plt.imshow(canvas)
-    plt.title("Image after rotation")
-    plt.show()
+src_img = cv2.imread("lenna.png")
+angle = 1
+shape_out_img = src_img.shape
 
-rotation_processing(img)
+result_img = rotation_image(src_img, angle, shape_out_img)
 
+cv2.imshow("Result", result_img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()

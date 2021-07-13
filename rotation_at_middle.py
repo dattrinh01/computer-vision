@@ -1,53 +1,47 @@
+import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-
-img = plt.imread("lenna.png")
 
 
-def translation_matrix(tx, ty):
-    return np.array([
-        [1, 0, tx],
-        [0, 1, ty],
+def rotation_middle(src_img, shift_distance, angle, shape_out_img):
+    width, height = src_img.shape[0], src_img.shape[1]
+
+    T_mat = np.array([
+        [1, 0, shift_distance[0]],
+        [0, 1, shift_distance[1]],
         [0, 0, 1]
     ])
 
-def rotation_matrix(angle):
-    return np.array([
+    R_mat = np.array([
         [np.cos(angle), -np.sin(angle), 0],
         [np.sin(angle), np.cos(angle), 0],
         [0, 0, 1]
     ])
 
-def get_grid(height, width):
-    coords = np.indices((height, width)).reshape(2, -1)
-    return np.vstack((coords, np.ones(coords.shape[1])))
+    transform_mat = T_mat @ R_mat @ np.linalg.inv(T_mat)
 
-def rotation_processing(img):
-    height, width = img.shape[0], img.shape[1]
-    coords = get_grid(height, width)
-    x_ori, y_ori = coords[0], coords[1]
-    R_mat = rotation_matrix(np.radians(90))
-    T_mat = translation_matrix(height // 2, width // 2)
-    
-    A = T_mat @ R_mat @ np.linalg.inv(T_mat) @ coords
+    result_img = np.zeros(shape_out_img, dtype='u1')
 
-    x_rotation, y_rotation = A[0, :], A[1, :]
+    for i in range(width):
+        for j in range(height):
 
-    indices = np.where((x_rotation >= 0) & (x_rotation < height) & (y_rotation >= 0) & (y_rotation < width))
+            _x = np.array([i, j, 1])
+            new_xy = np.dot(transform_mat, _x)
 
-    x_ori_map, y_ori_map = x_ori[indices].astype(np.int32), y_ori[indices].astype(np.int32)
-    x_rotation_map, y_rotation_map = x_rotation[indices].astype(np.int32), y_rotation[indices].astype(np.int32)
+            if 0 <= new_xy[0] < width and 0 <= new_xy[1] < height:
+                result_img[new_xy[0].astype(np.int32), new_xy[1].astype(
+                    np.int32)] = src_img[i, j]
 
-    canvas = np.zeros_like(img)
-    canvas[x_ori_map, y_ori_map] = img[x_rotation_map, y_rotation_map]
+    return result_img
 
-    plt.subplot(1, 2, 1)
-    plt.imshow(img)
-    plt.title("Image original")
-    plt.subplot(1, 2, 2)
-    plt.imshow(canvas)
-    plt.title("Image after rotation")
-    plt.show()
 
-rotation_processing(img)
+src_img = cv2.imread("lenna.png")
+shape_out_img = src_img.shape
+shift_distance = (src_img.shape[0] // 2, src_img.shape[1] // 2)
+angle = 45
 
+result_img = rotation_middle(
+    src_img, shift_distance, np.radians(angle), shape_out_img)
+
+cv2.imshow("Result", result_img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()

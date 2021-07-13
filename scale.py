@@ -1,43 +1,34 @@
-import numpy as np 
-import matplotlib.pyplot as plt
+import cv2
+import numpy as np
 
-img = plt.imread("lenna.png")
 
-def scale_matrix(scale):
-    return np.array([
-        [scale, 0, 0],
-        [0, scale, 0],
-        [0, 0, 1]
+def scale_img(src_img, scale_values, shape_out_img):
+    width, height = src_img.shape[0], src_img.shape[1]
+    S_mat = np.array([
+        [scale_values[0], 0],
+        [0, scale_values[1]]
     ])
 
-def get_grid(x, y):
-    coords = np.indices((x, y)).reshape(2, -1)
-    return np.vstack((coords, np.ones(coords.shape[1])))
+    result_img = np.zeros(shape_out_img, dtype='u1')
 
-def scale_processing(img):
-    height, width = img.shape[0], img.shape[1]
-    S_mat = scale_matrix(2)
-    coords = get_grid(height, width)
-    x_ori, y_ori = coords[0], coords[1]
+    for i in range(width):
+        for j in range(height):
 
-    S_mat_result = S_mat @ coords
+            _x = np.array([i, j])
+            new_xy = np.dot(S_mat, _x)
 
-    x_scale, y_scale = S_mat_result[0, :], S_mat_result[1, :]
+            if 0 < new_xy[0] < width and 0 < new_xy[1] < height:
+                result_img[new_xy[0], new_xy[1]] = src_img[i, j]
 
-    indices = np.where((x_scale >= 0) & (x_scale < height) & (y_scale >= 0) & (y_scale < width))
+    return result_img
 
-    x_ori_map, y_ori_map = x_ori[indices].astype(np.int32), y_ori[indices].astype(np.int32)
-    x_scale_map, y_scale_map = x_scale[indices].astype(np.int32), y_scale[indices].astype(np.int32)
 
-    canvas = np.zeros_like(img)
-    canvas[x_scale_map, y_scale_map] = img[x_ori_map, y_ori_map]
+src_img = cv2.imread("lenna.png")
+shape_out_img = src_img.shape
+scale_values = [2, 1]
 
-    plt.subplot(1, 2, 1)
-    plt.imshow(img)
-    plt.title("Image original")
-    plt.subplot(1, 2, 2)
-    plt.imshow(canvas)
-    plt.title("Image after scale")
-    plt.show()
+result_img = scale_img(src_img, scale_values, shape_out_img)
 
-scale_processing(img)
+cv2.imshow("Result", result_img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
