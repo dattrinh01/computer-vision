@@ -2,20 +2,36 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-src_img = cv2.imread("lenna.png")
+src_img = cv2.imread('lenna.png')
 
-def gaussian(filter_size, sigma):
+def rgb2gray(src_img):
+    gray_img = src_img.copy()
+    R = np.array(src_img[:, :, 0])
+    G = np.array(src_img[:, :, 1])
+    B = np.array(src_img[:, :, 2])
+
+    R = R * 0.299
+    G = G * 0.587
+    B = B * 0.114
+
+    sum = (R + G + B)
+    for i in range(3):
+        gray_img[:, :, i] = sum
+    return gray_img
+
+def laplacian_of_gaussian(filter_size, sigma):
     gaussian_filter = np.zeros((filter_size, filter_size), np.float32)
     m = filter_size // 2
     for x in range(-m, m+1):
         for y in range(-m, m+1):
             part_1 = 2 * np.pi * sigma**2
             part_2 = np.exp(-(x**2 + y**2)/2*sigma**2)
-            gaussian_filter[x+m, y+m] = part_2 / part_1
+            part_3 = ((x**2 + y**2) / sigma**4) - (2 / sigma**2)
+            gaussian_filter[x+m, y+m] = part_3 * (part_2 / part_1)
     return gaussian_filter
 
-def convolution(src_img, kernel):
 
+def convolution(src_img, kernel):
     kernel_h = kernel.shape[0]
     kernel_w = kernel.shape[1]
 
@@ -43,17 +59,17 @@ def convolution(src_img, kernel):
         return image_conv[h:, w:w_end]
     if (w == 0):
         return image_conv[h:h_end, w:]
-    
     return image_conv[h:h_end, w:w_end]
 
-def process(src_img):
-    gaussian_filter = gaussian(5,1)
+def process(src_img, laplacianGaussian):
     result_image = np.zeros(src_img.shape, dtype = "u1")
     for c in range(3):
-        result_image[:, :, c] = convolution(src_img[:, :, c], gaussian_filter)
+        result_image[:, :, c] = convolution(src_img[:, :, c], laplacianGaussian)
     return result_image
-        
 
-cv2.imshow("img", process(src_img))
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+gray_img = rgb2gray(src_img)
+laplacianGaussian = laplacian_of_gaussian(5,1)
+result_image = process(gray_img, laplacianGaussian)
+
+plt.imshow(result_image)
+plt.show()
