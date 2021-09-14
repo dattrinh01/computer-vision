@@ -6,6 +6,7 @@ src_img = cv2.imread("data_noise.png")
 
 gray = cv2.cvtColor(src_img, cv2.COLOR_BGR2GRAY)
 
+
 def process(src_img):
     outputImg = src_img.copy()
     width, height = src_img.shape
